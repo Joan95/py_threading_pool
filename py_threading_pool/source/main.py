@@ -11,7 +11,7 @@
 
 import random
 import time
-from MyThreadPool import ThreadPool
+from MyThreadPool import ThreadPool as MyThreadPoolClass
 from threading import current_thread, Semaphore, Thread
 
 MAX_NUM_OF_THREADS_ALLOWED_TO_EXIST = 50
@@ -27,7 +27,7 @@ def function_to_execute(semaphore, pool):
 
 
 def main():
-    pool = ThreadPool()
+    pool = MyThreadPoolClass()
     s = Semaphore(MAX_NUM_OF_THREADS_ALLOWED_RUNNING_AT_SAME_TIME)
     list_of_threads = list()
 
