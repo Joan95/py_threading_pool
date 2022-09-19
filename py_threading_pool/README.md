@@ -22,7 +22,8 @@ Now that it has been declared, it can be passed to any new Thread as a parameter
 And inside the targeted function, just call the "activate" function when the thread is about to start executing and call the "deactivate" function accordingly once it is over.
 ```py
 def function_to_execute(semaphore, pool):
-	pool.activate(current_thread().name)
-	# Do your stuff here
-	pool.deactivate(current_thread().name)
+	with semaphore:
+		pool.activate(current_thread().name)
+		# Do your stuff here
+		pool.deactivate(current_thread().name)
 ```
