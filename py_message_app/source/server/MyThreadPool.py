@@ -20,9 +20,11 @@ class ThreadPool(object):
 
     def activate(self, thread_id):
         with self.lock:
-            self.active.append(thread_id)
-            print(f"Active Thread list:\t{self.active}")
+            if thread_id not in self.active:
+                self.active.append(thread_id)
+                print(f"Active Thread list:\t{self.active}")
 
     def deactivate(self, thread_id):
         with self.lock:
-            self.active.remove(thread_id)
+            if thread_id in self.active:
+                self.active.remove(thread_id)
