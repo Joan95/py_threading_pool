@@ -43,6 +43,11 @@ def init_server():
     return server_socket
 
 
+def clients_notify_new_message(new_message, sender_user_connection_id):
+    for connection_id in client_sockets:
+        client_sockets[connection_id].send(new_message.encode())
+
+
 def listen_client(semaphore, thread_pool, client_socket):
     global active_users_dict
 
@@ -69,15 +74,25 @@ def listen_client(semaphore, thread_pool, client_socket):
                     else:
                         active_users_dict[current_thread().name]['messages_to'].append(msg)
                         print(msg)
+
+                        # Notify message to the rest of clients
+                        clients_notify_new_message(msg, current_thread().name)
                 else:
                     print("Client down.")
                     thread_finished = True
     except ConnectionResetError as cre:
         print(f"\t{feedback_warning_tag} {cre}")
+    except Exception as e:
+        print(e)
     finally:
+        finish_client_connection(current_thread().name)
         thread_pool.deactivate(current_thread().name)
-        client_sockets[current_thread().name].remove(client_socket)
-        print(f"{feedback_disconnection_tag} Client {current_thread().name} got disconnected.")
+
+
+def finish_client_connection(client_id):
+    # Close SOCKET connection
+    client_sockets[client_id].close()
+    print(f"{feedback_disconnection_tag} Client {current_thread().name} got disconnected.")
 
 
 def main():
@@ -96,11 +111,10 @@ def main():
             connection_id = f"{client_socket.getsockname()[0]}:{client_socket.getsockname()[1]}"
 
             if connection_id in client_sockets:
-                connection_id = f"{connection_id}_{list(client_sockets).count(connection_id)}"
+                connection_id = f"{connection_id}_{sum((element.count(connection_id) for element in client_sockets))}"
 
             # Add new socket into client list
-            client_sockets[connection_id] = list()
-            client_sockets[connection_id].append(client_socket)
+            client_sockets[connection_id] = client_socket
 
             # Create a new Thread
             client_thread = Thread(target=listen_client,
