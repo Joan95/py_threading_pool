@@ -11,7 +11,7 @@ SERVER_PORT = 5002
 separator_token = ": "
 new_user_tag_id = "new_id_username: "
 reconnect_number_of_attempts = 5
-time_to_wait = 15
+time_to_wait = 5
 
 # Init colors
 init()
@@ -47,15 +47,15 @@ def init_socket_client():
         print(f"{feedback_positive_tag} Connected successfully!")
     except socket.timeout as st:
         print(f"\t{feedback_error_tag} {st}")
-        print(f"{feedback_warning_tag} - Server may be down")
+        print(f"\t{feedback_warning_tag} - Server currently unavailable")
         client_socket = None
     except ConnectionRefusedError as cre:
         print(f"\t{feedback_error_tag} {cre}")
-        print(f"{feedback_warning_tag} - Server may be down")
+        print(f"\t{feedback_warning_tag} - Server may be down")
         client_socket = None
     except ConnectionError as ce:
         print(ce)
-        print(f"{feedback_error_tag} - Unexpected Connection Error happened")
+        print(f"\t{feedback_error_tag} - Unexpected Connection Error happened")
         client_socket = None
 
     return client_socket
@@ -147,23 +147,33 @@ def main():
 
                 # If server is currently down, just send following
                 while dead_server and reattempt_counter < reconnect_number_of_attempts:
-                    # Reattempt connection (?)
-                    print("Server down, reattempting connection...")
+                    need_to_drop = True
                     reattempt_counter += 1
+
+                    # Reattempt connection (?)
+                    print(f"{feedback_waiting_tag} Reattempting connection... "
+                          f"Attempt {reattempt_counter}/{reconnect_number_of_attempts}")
 
                     client_socket = init_socket_client()
                     if client_socket:
+                        need_to_drop = False
                         dead_server = False
-                        print(f"Reconnected as {client_name}!")
+                        print(f"{feedback_positive_tag} Reconnected as {client_name}!")
                         client_socket.send(f"{new_user_tag_id}{client_name}".encode())
 
                         t = Thread(target=listen_for_messages, args=(client_socket,), daemon=True)
                         t.start()
                         break
-                    print(f"Reattempting in {time_to_wait} seconds")
-                    time.sleep(time_to_wait)
+
+                    if reattempt_counter < reconnect_number_of_attempts:
+                        print(f"\t{feedback_waiting_tag} Trying again after {time_to_wait} seconds")
+                        time.sleep(time_to_wait)
         finally:
-            client_socket.close()
+            try:
+                print(f"{feedback_positive_tag} Connection finally closed")
+                client_socket.close()
+            except AttributeError:
+                pass
 
 
 if __name__ == "__main__":
